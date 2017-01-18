@@ -1,0 +1,66 @@
+#!/bin/bash
+
+set -e
+
+[ -z $1 ] && echo "specify a range to diff" && exit 1
+
+CHANGES=$(git diff --submodule $1 | grep ^Submodule)
+
+echo Found these submodule changes:
+echo $CHANGES
+# Example values for $CHANGES:
+#   Submodule src/civetweb 8d27131...47e4be1 (not checked out)
+#   Submodule src/civetweb 8d27131..47e4be1:
+
+if [ $(echo $CHANGES | wc -l) -eq 0 ]; then
+  echo "no submodule changes found"
+  exit 1
+fi
+
+if [ $(echo $CHANGES | wc -l) -gt 1 ]; then
+  echo "cannot handle more than one submodule change at a time"
+  exit 1
+fi
+
+DIR=$(echo $CHANGES | awk '{ print $2 }')
+
+# Our *submodule* range
+RANGE=$(echo $CHANGES | awk '{ print $3 }' | sed -e s/:$//)
+
+echo $RANGE in directory $DIR
+
+# FIRST=$(echo $RANGE | awk -F'..' '{ print $1 }')
+# TODO:
+# To be able to stay on the dist-git branch:
+# 1. Parse `git show $FIRST:.gitmodules` with Python's ConfigParser
+# 2. Get the URL for $DIR and (bare?) clone it to a tmpdir
+# 3. `git format-patch ...` within that tmpdir clone
+# 4. profit
+
+pushd $DIR > /dev/null
+rm -rf /tmp/submodule # hack, use a real tmpdir instead
+git format-patch \
+  --no-renames \
+  --no-signature \
+  -N \
+  --ignore-submodules \
+  -o /tmp/submodule $RANGE
+
+
+SOURCENUM=100
+for f in /tmp/submodule/*; do
+  SOURCENUM=$(($SOURCENUM + 1))
+  echo Source${SOURCENUM}: $(basename $f)
+done
+
+echo
+
+echo "# submodule patches must be handled separately"
+echo "# https://github.com/redhat-openstack/rdopkg/issues/16"
+echo pushd $DIR
+SOURCENUM=100
+for f in /tmp/submodule/*; do
+  SOURCENUM=$(($SOURCENUM + 1))
+  echo "  patch -p1 --fuzz=0 -i %{SOURCE${SOURCENUM}}"
+done
+echo popd
