@@ -20,8 +20,6 @@ your RPM ``.spec`` file.
 TODO
 ----
 
-* Rewrite this in Python
-
 * Do the .spec file manipulations
 
 * Incorporate into rdopkg

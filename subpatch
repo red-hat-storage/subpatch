@@ -1,67 +1,111 @@
-#!/bin/bash
+#!/usr/bin/python
 
-set -e
-
-[ -z $1 ] && echo "specify a range to diff" && exit 1
-
-CHANGES=$(git diff --submodule $1 | grep ^Submodule)
-
-echo Found these submodule changes:
-echo $CHANGES
-# Example values for $CHANGES:
-#   Submodule src/civetweb 8d27131...47e4be1 (not checked out)
-#   Submodule src/civetweb 8d27131..47e4be1:
-
-if [ $(echo $CHANGES | wc -l) -eq 0 ]; then
-  echo "no submodule changes found"
-  exit 1
-fi
-
-if [ $(echo $CHANGES | wc -l) -gt 1 ]; then
-  echo "cannot handle more than one submodule change at a time"
-  exit 1
-fi
-
-DIR=$(echo $CHANGES | awk '{ print $2 }')
-
-# Our *submodule* range
-RANGE=$(echo $CHANGES | awk '{ print $3 }' | sed -e s/:$//)
-
-echo $RANGE in directory $DIR
-
-# FIRST=$(echo $RANGE | awk -F'..' '{ print $1 }')
-# TODO:
-# To be able to stay on the dist-git branch:
-# (or having to run git submodule update $DIR):
-# 1. Parse `git show $FIRST:.gitmodules` with Python's ConfigParser
-# 2. Get the URL for $DIR and (bare?) clone it to a tmpdir
-# 3. `git format-patch ...` within that tmpdir clone
-# 4. profit
-
-pushd $DIR > /dev/null
-rm -rf /tmp/submodule # hack, use a real tmpdir instead
-git format-patch \
-  --no-renames \
-  --no-signature \
-  -N \
-  --ignore-submodules \
-  -o /tmp/submodule $RANGE
+from StringIO import StringIO
+from glob import glob
+import logging
+import os
+import subprocess
+import sys
+import tempfile
+import shutil
+try:
+    from configparser import ConfigParser
+except ImportError:
+    import ConfigParser
 
 
-SOURCENUM=100
-for f in /tmp/submodule/*; do
-  SOURCENUM=$(($SOURCENUM + 1))
-  echo Source${SOURCENUM}: $(basename $f)
-done
+logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+log = logging.getLogger()
 
-echo
 
-echo "# submodule patches must be handled separately"
-echo "# https://github.com/redhat-openstack/rdopkg/issues/16"
-echo pushd $DIR
-SOURCENUM=100
-for f in /tmp/submodule/*; do
-  SOURCENUM=$(($SOURCENUM + 1))
-  echo "  patch -p1 --fuzz=0 -i %{SOURCE${SOURCENUM}}"
-done
-echo popd
+def git(*args):
+    """ Run a git shell command, optionally returning the output """
+    args = ('git',) + args
+    log.info('+ ' + ' '.join(args))
+    return subprocess.check_output(args)
+
+
+def main(argv):
+    try:
+        parent_range = argv[1]
+    except IndexError:
+        raise SystemExit('specify a Git range to diff')
+
+    changes = set()
+    for line in git('diff', '--submodule=log', parent_range).split("\n"):
+        if line.startswith('Submodule '):
+            changes.add(line)
+
+    # Example values for changes:
+    #   Submodule src/civetweb 8d27131...47e4be1 (not checked out)
+    #   Submodule src/civetweb 8d27131..47e4be1:
+
+    if len(changes) == 0:
+        raise SystemExit('no submodule changes found')
+
+    log.info('Found these submodule changes:')
+    log.info("\n".join(changes))
+
+    if len(changes) > 1:
+        raise SystemExit('cannot handle more than one submodule change')
+
+    _, directory, rng = next(iter(changes)).split(' ')
+
+    if rng.endswith(':'):
+        rng = rng[:-1]
+
+    log.info('range %s in directory %s' % (directory, rng))
+
+    first, _ = parent_range.split('..')
+    # To be able to stay on the dist-git branch:
+    # (or having to run git submodule update $DIR):
+    # 1. Parse `git show $FIRST:.gitmodules` with Python's ConfigParser
+    # 2. Get the URL for $DIR and (bare?) clone it to a tmpdir
+    # 3. `git format-patch ...` within that tmpdir clone
+    # 4. profit
+    show = git('show', first + ':.gitmodules')
+    showfp = StringIO("\n".join(line.strip() for line in show.split("\n")))
+    config = ConfigParser.ConfigParser()
+    config.readfp(showfp)
+    url = config.get('submodule "%s"' % directory, 'url')
+    tmpclonedir = tempfile.mkdtemp(suffix='.subpatch')
+    git('clone', '--bare', url, tmpclonedir)
+    origcwd = os.getcwd()
+
+    # format-patches from this tmp clone
+    os.chdir(tmpclonedir)
+    tmppatchdir = tempfile.mkdtemp(suffix='.subpatch')
+    git('format-patch', '--no-renames', '--no-signature', '-N',
+        '--ignore-submodules', '-o', tmppatchdir, rng)
+
+    print('')
+    print('Insert the following lines into your .spec file:')
+    print('')
+
+    os.chdir(tmppatchdir)
+    shutil.rmtree(tmpclonedir)
+    sourcenum = 100
+    for patch in sorted(glob('*.patch')):
+        sourcenum += 1
+        print('Source%i: %s' % (sourcenum, os.path.basename(patch)))
+
+    print('')
+    print('...and in the %prep section of your .spec file:')
+    print('')
+    print('# submodule patches must be handled separately')
+    print('# https://github.com/redhat-openstack/rdopkg/issues/16')
+
+    print('pushd %s' % directory)
+    sourcenum = 100
+    for patch in sorted(glob('*.patch')):
+        sourcenum += 1
+        print('  patch -p1 --fuzz=0 -i %%{SOURCE%i}' % sourcenum)
+        shutil.move(patch, origcwd)
+    print('popd')
+
+    shutil.rmtree(tmppatchdir)
+
+
+
+if __name__ == '__main__':
+    main(sys.argv)
