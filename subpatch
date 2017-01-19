@@ -32,6 +32,7 @@ echo $RANGE in directory $DIR
 # FIRST=$(echo $RANGE | awk -F'..' '{ print $1 }')
 # TODO:
 # To be able to stay on the dist-git branch:
+# (or having to run git submodule update $DIR):
 # 1. Parse `git show $FIRST:.gitmodules` with Python's ConfigParser
 # 2. Get the URL for $DIR and (bare?) clone it to a tmpdir
 # 3. `git format-patch ...` within that tmpdir clone
