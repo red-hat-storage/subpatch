@@ -17,6 +17,12 @@ Example::
 This will generate ``.patch`` files and print some code for you to paste into
 your RPM ``.spec`` file.
 
+An example that could fit with rdopkg::
+
+  subpatch v10.2.5~..ceph-2-rhel-patches
+
+This would check the entire "-patches" branch for submodule changes downstream.
+
 TODO
 ----
 
