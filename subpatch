@@ -60,6 +60,10 @@ def main(argv):
     if rng.endswith(':'):
         rng = rng[:-1]
 
+    # format-patch will generate uneeded patches if we use the triple-dot
+    # "..." range. Switch to using the double-dot ".." range.
+    rng = rng.replace('...', '..')
+
     log.info('range %s in directory %s' % (directory, rng))
 
     first, _ = parent_range.split('..')
