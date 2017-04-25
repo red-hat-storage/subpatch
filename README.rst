@@ -8,6 +8,7 @@ https://github.com/openstack-packages/rdopkg/issues/16)
 
 Usage::
 
+  git checkout ceph-2-rhel-patches
   subpatch <git range>
 
 Example::
