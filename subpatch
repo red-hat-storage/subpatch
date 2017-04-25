@@ -4,6 +4,7 @@ from StringIO import StringIO
 from glob import glob
 import logging
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -49,7 +50,12 @@ def main(argv):
     if len(changes) > 1:
         raise SystemExit('cannot handle more than one submodule change')
 
-    _, directory, rng = next(iter(changes)).split(' ')
+    change = next(iter(changes))
+    m = re.match('Submodule (\S+) (\S+)', change)
+    if not m:
+        raise RuntimeError('error parsing change output "%s"' % change)
+    directory = m.group(1)
+    rng = m.group(2)
 
     if rng.endswith(':'):
         rng = rng[:-1]
