@@ -91,6 +91,8 @@ def main(argv):
     os.chdir(tmppatchdir)
     shutil.rmtree(tmpclonedir)
     sourcenum = 100
+    print('With the other "SourceX" lines:')
+    print('')
     for patch in sorted(glob('*.patch')):
         sourcenum += 1
         print('Source%i: %s' % (sourcenum, os.path.basename(patch)))
