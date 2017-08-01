@@ -36,4 +36,4 @@ TODO
 * Handle submodules within submodules?
 
 * Integration with Debian packaging / `rhcephpkg
-<https://github.com/red-hat-storage/rhcephpkg>`_
+  <https://github.com/red-hat-storage/rhcephpkg>`_
