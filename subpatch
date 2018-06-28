@@ -9,10 +9,12 @@ import subprocess
 import sys
 import tempfile
 import shutil
-try:
-    from configparser import ConfigParser
-except ImportError:
+
+PY2 = sys.version_info[0] == 2
+if PY2:
     import ConfigParser
+else:
+    from configparser import ConfigParser
 
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
