@@ -84,11 +84,14 @@ def main(argv):
     git('clone', '--bare', url, tmpclonedir)
     origcwd = os.getcwd()
 
-    # format-patches from this tmp clone
+    # create a single .patch file from this tmp clone
     os.chdir(tmpclonedir)
     tmppatchdir = tempfile.mkdtemp(suffix='.subpatch')
-    git('format-patch', '--no-renames', '--no-signature', '-N',
-        '--ignore-submodules', '-o', tmppatchdir, rng)
+    diff = git('diff', '--no-renames', '--ignore-submodules', rng)
+    basename = os.path.basename(directory)
+    patch_file = os.path.join(tmppatchdir, '%s.patch' % basename)
+    with open(patch_file, 'w') as f:
+        f.write(diff)
 
     print('')
     print('Insert the following lines into your .spec file:')
