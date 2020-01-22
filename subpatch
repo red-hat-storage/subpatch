@@ -53,7 +53,7 @@ def main(argv):
         raise SystemExit('cannot handle more than one submodule change')
 
     change = next(iter(changes))
-    m = re.match('Submodule (\S+) (\S+)', change)
+    m = re.match(r'Submodule (\S+) (\S+)', change)
     if not m:
         raise RuntimeError('error parsing change output "%s"' % change)
     directory = m.group(1)
