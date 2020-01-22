@@ -39,6 +39,55 @@ def find_url(gitmodules, directory):
     return url
 
 
+def new_submodule(directory, parent_commit, rng):
+    """
+    :param str directory: submodule location
+    :param str parent_commit: parent commit that has the new submodule.
+    :param str rng: range for this submodule. Starts with "000000"
+    """
+    log.warning('new submodule!')
+    gitmodules = git('show', parent_commit + ':.gitmodules')
+
+    url = find_url(gitmodules, directory)
+
+    tmpdir = tempfile.mkdtemp(suffix='.subpatch')
+    git('clone', '--bare', url, tmpdir)
+
+    # "sha" is the commit to use for this submodule
+    _, sha = rng.split('..')
+    name = os.path.basename(directory)
+
+    # create a tarball
+    filename = '%s-%s.tar.gz' % (name, sha)
+    git('archive',
+        '--prefix=%s/' % directory,
+        '--output=%s' % filename,
+        sha,
+        cwd=tmpdir)
+    # move it to the current working directory
+    path = os.path.join(tmpdir, filename)
+    log.info('created %s' % path)
+
+    shutil.move(path, filename)
+
+    print('')
+    print('Insert the following lines into your .spec file:')
+    print('')
+    print('With the other "SourceX" lines:')
+    print('')
+    print('Source100: %s' % filename)
+
+    print('')
+    print('...and in the %prep section of your .spec file:')
+    print('')
+    print('# %s submodule:' % name)
+    print('tar xzf %{SOURCE100}')
+
+    shutil.rmtree(tmpdir)
+
+    raise SystemExit(1)
+
+
 def main(argv):
     try:
         parent_range = argv[1]
@@ -53,6 +102,7 @@ def main(argv):
     # Example values for changes:
     #   Submodule src/civetweb 8d27131...47e4be1 (not checked out)
     #   Submodule src/civetweb 8d27131..47e4be1:
+    #   Submodule src/spawn 0000000000...5f4742f647 (new submodule)
 
     if len(changes) == 0:
         raise SystemExit('no submodule changes found')
@@ -64,7 +114,7 @@ def main(argv):
         raise SystemExit('cannot handle more than one submodule change')
 
     change = next(iter(changes))
-    m = re.match(r'Submodule (\S+) (\S+)', change)
+    m = re.match(r'Submodule (\S+) (\S+)(?: \((.+)\))?', change)
     if not m:
         raise RuntimeError('error parsing change output "%s"' % change)
     directory = m.group(1)
@@ -78,6 +128,11 @@ def main(argv):
     rng = rng.replace('...', '..')
 
     log.info('range %s in directory %s' % (rng, directory))
+
+    if len(m.groups()) == 3:
+        if m.group(3) == 'new submodule':
+            _, parent_commit = parent_range.split('..')
+            return new_submodule(directory, parent_commit, rng)
 
     first, _ = parent_range.split('..')
     # To be able to stay on the dist-git branch:
