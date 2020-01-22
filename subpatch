@@ -21,11 +21,11 @@ logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 log = logging.getLogger()
 
 
-def git(*args):
+def git(*args, **kwargs):
     """ Run a git shell command, optionally returning the output """
     args = ('git',) + args
     log.info('+ ' + ' '.join(args))
-    return subprocess.check_output(args)
+    return subprocess.check_output(args, **kwargs)
 
 
 def main(argv):
