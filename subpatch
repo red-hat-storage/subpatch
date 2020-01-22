@@ -66,7 +66,7 @@ def main(argv):
     # "..." range. Switch to using the double-dot ".." range.
     rng = rng.replace('...', '..')
 
-    log.info('range %s in directory %s' % (directory, rng))
+    log.info('range %s in directory %s' % (rng, directory))
 
     first, _ = parent_range.split('..')
     # To be able to stay on the dist-git branch:
