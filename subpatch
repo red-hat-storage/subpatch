@@ -79,7 +79,8 @@ def main(argv):
     showfp = StringIO("\n".join(line.strip() for line in show.split("\n")))
     config = ConfigParser.ConfigParser()
     config.readfp(showfp)
-    url = config.get('submodule "%s"' % directory, 'url')
+    section = 'submodule "%s"' % directory
+    url = config.get(section, 'url')
     tmpclonedir = tempfile.mkdtemp(suffix='.subpatch')
     git('clone', '--bare', url, tmpclonedir)
     origcwd = os.getcwd()
