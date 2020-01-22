@@ -130,6 +130,10 @@ def main(argv):
     log.info('range %s in directory %s' % (rng, directory))
 
     if len(m.groups()) == 3:
+        if m.group(3) == 'not checked out' and rng.startswith('0000000000..'):
+            log.warning('Please run "git submodule update --init"')
+            log.warning('and re-try.')
+            raise SystemExit(1)
         if m.group(3) == 'new submodule':
             _, parent_commit = parent_range.split('..')
             return new_submodule(directory, parent_commit, rng)
