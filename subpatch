@@ -85,8 +85,6 @@ def new_submodule(directory, parent_commit, rng):
 
     shutil.rmtree(tmpdir)
 
-    raise SystemExit(1)
-
 
 def main(argv):
     try:
