@@ -34,6 +34,3 @@ TODO
 * Handle more than one submodule change at a time
 
 * Handle submodules within submodules?
-
-* Integration with Debian packaging / `rhcephpkg
-  <https://github.com/red-hat-storage/rhcephpkg>`_
