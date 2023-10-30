@@ -26,7 +26,11 @@ def git(*args, **kwargs):
     """ Run a git shell command, optionally returning the output """
     args = ('git',) + args
     log.info('+ ' + ' '.join(args))
-    return subprocess.check_output(args, **kwargs)
+    output = subprocess.check_output(args, **kwargs)
+    if PY2:
+        return output
+    else:
+        return output.decode('utf-8')
 
 
 def find_url(gitmodules, directory):
