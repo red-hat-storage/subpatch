@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-from StringIO import StringIO
 from glob import glob
 import logging
 import os
@@ -13,8 +12,10 @@ import shutil
 PY2 = sys.version_info[0] == 2
 if PY2:
     import ConfigParser
+    from StringIO import StringIO
 else:
     from configparser import ConfigParser
+    from io import StringIO
 
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
