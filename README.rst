@@ -8,21 +8,20 @@ https://github.com/openstack-packages/rdopkg/issues/16)
 
 Usage::
 
-  git checkout ceph-2-rhel-patches
+  git checkout ceph-7.0-rhel-patches
   subpatch <git range>
 
-Example::
+Example: To check the entire ``-patches`` branch for submodule changes
+downstream::
+
+  subpatch v18.2.0..ceph-7.0-rhel-patches
+
+Example: Check one single ``-patches`` branch change::
 
   subpatch 7eb4203~..7eb4203
 
 This will generate ``.patch`` files and print some code for you to paste into
 your RPM ``.spec`` file.
-
-An example that could fit with rdopkg::
-
-  subpatch v10.2.5~..ceph-2-rhel-patches
-
-This would check the entire "-patches" branch for submodule changes downstream.
 
 TODO
 ----
