@@ -23,6 +23,11 @@ Example: Check one single ``-patches`` branch change::
 This will generate ``.patch`` files and print some code for you to paste into
 your RPM ``.spec`` file.
 
+To add the new ``.patch`` file to dist-git, commit it directly like a normal
+text file::
+
+  git add s3select.patch
+
 TODO
 ----
 
