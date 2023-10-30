@@ -39,9 +39,10 @@ def find_url(gitmodules, directory):
     fp = StringIO(contents)
     config = ConfigParser()
     config.readfp(fp)
-    section = 'submodule "%s"' % directory
-    url = config.get(section, 'url')
-    return url
+    for section in config.sections():
+        path = config.get(section, 'path')
+        if path == directory:
+            return config.get(section, 'url')
 
 
 def new_submodule(directory, parent_commit, rng):
